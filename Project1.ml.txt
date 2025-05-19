@@ -1,0 +1,799 @@
+(* --------------------------------------Step 1: Abstract Syntax-------------------------------------- *)
+(*
+<Program> ::= <DeclarationList> <Instruction> 
+ 
+<DeclarationList> ::= <Declaration> * 
+<Declaration> ::= <Variable> <Type> 
+<Type> ::= BooleanType | IntegerType 
+ 
+<Instruction> ::=  Skip |
+                    <Variable> <Expression> |
+                    <Instruction> * |
+                    <BooleanExpression> <Instruction> <Instruction> |
+                    <BooleanExpression> <Instruction> 
+ 
+<Expression> ::= <IntegerExpression> | <BooleanExpression> 
+<BooleanExpression> ::= <BooleanConstant> |
+                        <Variable>  |
+                        <IntergerExpression> <RelationalOp> <IntegerExpression> |
+                        <BooleanExpression> <BooleanOp> <BooleanExpression>  
+<IntegerExpression> := <IntegerConstant> |
+                        <Variable> |
+                        <IntegerExpression> <ArithmaticOp> <IntegerExpression>  
+
+<Boolean_Op> ::= And | Or   
+<Relational_Op> ::= Lt | Le | Eq | Ne | Ge | Gt 
+<Arithmatic_Op> ::= Plus | Minus | Times | Div 
+ 
+<Boolean_Constant> ::= B 
+<Integer_constant> ::= Z 
+<Variable> ::= S
+*)
+
+(* -----------------------------------Solution----------------------------------- *)
+
+(* Increasing Print Depth *)
+Control.Print.printDepth := 100;
+
+(* GLL: Graal Like Language *)
+(* Defining variable from a string *)
+datatype Variable = GLL_Variable of string;
+(* Defining integer constants *)
+type Integer_Constant = int;
+(* Defining boolean constants *)
+type Boolean_Constant = bool;
+
+(* Arithmetic operations *)
+datatype Arithmetic_Op = Plus | Minus | Times | Div;
+(* Relational Operations *)
+datatype Relational_Op = Lt | Le | Eq | Ne | Ge | Gt;
+(* Boolean Operations *)
+datatype Boolean_Op = And | Or;
+
+(* Different forms of an Integer Expression (Eg: 2, n, 2 Plus 2, n Plus 2, etc.) *)
+datatype IntegerExpression = Constant_IntegerExpression of Integer_Constant |
+                                Variable_IntegerExpression of Variable |
+                                Arithmetic_Operation_IntegerExpression of (IntegerExpression * Arithmetic_Op * IntegerExpression);
+
+(* Different forms of a Boolean Expression (Eg: true, n, 2 Eq 2, n Eq 2, true And true, 2 Or n, etc.) *)
+datatype BooleanExpression = Constant_BooleanExpression of Boolean_Constant |
+                                Variable_BooleanExpression of Variable |
+                                Relational_Operation_BooleanExpression of (IntegerExpression * Relational_Op * IntegerExpression) |
+                                Boolean_Operation_BooleanExpression of (BooleanExpression * Boolean_Op * BooleanExpression);
+
+(* Different forms of an Expression *)
+datatype Expression = IntegerExpression_Expression of IntegerExpression |
+                        BooleanExpression_Expression of BooleanExpression;
+
+(* Different forms of an Instruction (Eg: a = 1, [(b = 2), (Skip)], Skip, If(a==2) Then i=i+1 else j=j-1, while(true) i=i+1, etc. ) *)
+datatype Instruction = Skip |
+                        Variable_Expression_Instruction of (Variable * Expression) |
+                        Instruction_List of Instruction list |
+                        BooleanExpression_Instruction_Instruction of (BooleanExpression * Instruction * Instruction) |
+                        BooleanExpression_Instruction of (BooleanExpression * Instruction);
+
+(* Different forms of Type *)
+datatype Type = BooleanType | IntegerType;
+(* Defining Declaration (Eg: n integer, m boolean, etc.) *)
+type Declaration = Variable * Type;
+(* Defining List of Declarations (Eg: [(n integer), (m boolean)], etc.) *)
+type DeclarationList = Declaration list;
+
+(* GLL: Graal Like Language *)
+(* Defining a Program *)
+datatype Program = GLL_Program of (DeclarationList * Instruction);
+
+
+(* 
+/*
+Sample 5
+In number theory, the aliquot sum s(n) of a positive integer n is the sum of all proper divisors of n,
+that is, all divisors of n other than n itself.
+For Example :
+Input : 12      Input : 15
+Output : 16      Output : 9
+Explanation :      Explanation :
+Proper divisors of 12 is = 1, 2, 3, 4, 6   Proper divisors of 15 is 1, 3, 5
+and sum 1 + 2 + 3 + 4 + 6 = 16    and sum 1 + 3 + 5 = 9
+*/
+
+PROGRAM aliquotSum
+{
+  n   Integer;
+  sum  Integer;
+  i  Integer;
+
+  n = 12;
+  sum = 0;
+
+  IF (n Le 0) THEN sum = 0;
+  ELSE
+  {
+   i = 1;
+   WHILE (i Lt n)
+   {
+    IF ((n Minus i Times (n Div i)) Eq 0) THEN sum = sum Plus i;
+    i = i Plus 1;
+   } 
+ }   
+}
+*)
+
+(*
+Java code for reference:
+
+import java.util.*;
+import java.lang.*;
+
+class Rextester
+{
+    public static void main(String args[])
+    {
+        int n;
+        int sum;
+        int i;
+
+        n = 12;
+        sum = 0;
+
+        if (n <= 0) {
+            sum = 0;
+        } else {
+            i = 1;
+            while (i < n) {
+                if ((n - i * (n / i)) == 0) {
+                    sum = sum + i;
+                }
+                i = i + 1;
+            }
+        }
+    }
+}
+
+*)
+
+(* -----------------------------------Solution----------------------------------- *)
+
+(* Variables and constants *)
+(* i *)
+val i = GLL_Variable("i");
+(* sum *)
+val sum = GLL_Variable("sum");
+(* n *)
+val n = GLL_Variable("n");
+(* 0 *)
+val zero = 0;
+(* 1 *)
+val one = 1;
+(* 12 *)
+val twelve = 12;
+
+(* For i + 1 *)
+(* i as an IntegerExpression *)
+val integerExpressionI = Variable_IntegerExpression(i);
+(* 1 as an IntegerExpression *)
+val integerExpressionOne = Constant_IntegerExpression(one);
+(* i + 1 as an IntegerExpression *)
+val integerExpressionIPlusOne = Arithmetic_Operation_IntegerExpression(integerExpressionI, Plus, integerExpressionOne);
+(* i + 1 as an Expression *)
+val expressionIPlusOne = IntegerExpression_Expression(integerExpressionIPlusOne);
+
+(* For i = i + 1 *)
+(* i = i + 1 as an Instruction *)
+val iEqualsIPlusOne = Variable_Expression_Instruction(i, expressionIPlusOne);
+
+(* Creating the Inner if then else instruction *)
+
+(* Creating the boolean confition for if *)
+
+(* n as IntegerExpression *)
+val integerExpressionN = Variable_IntegerExpression(n);
+(* (n / i) as IntegerExpression *)
+val integerExpressionNDivI = Arithmetic_Operation_IntegerExpression(integerExpressionN, Div, integerExpressionI)
+(* i * (n / i) as IntegerExpression *)
+val integerExpressionITimesNDivI = Arithmetic_Operation_IntegerExpression(integerExpressionI, Times, integerExpressionNDivI)
+(* n - i * (n / i) as IntegerExpression *)
+val integerExpressionNMinusITimesNDivI = Arithmetic_Operation_IntegerExpression(integerExpressionN, Minus, integerExpressionITimesNDivI)
+(* 0 as IntegerExpression *)
+val integerExpressionZero = Constant_IntegerExpression(zero);
+(* (n - i * (n / i)) == 0 as BooleanExpression *)
+val innerIfBooleanExpression = Relational_Operation_BooleanExpression(integerExpressionNMinusITimesNDivI, Eq, integerExpressionZero)
+
+(* Creating Instruction for then (sum = sum + i;) *)
+
+(* sum as an IntegerExpression *)
+val integerExpressionSum = Variable_IntegerExpression(sum);
+(* sum + i as an IntegerExpression *)
+val integerExpressionSumPlusI = Arithmetic_Operation_IntegerExpression(integerExpressionSum, Plus, integerExpressionI);
+(* i + 1 as an Expression *)
+val expressionSumPlusI = IntegerExpression_Expression(integerExpressionSumPlusI);
+
+(* For sum = sum + i (Then part of inner if-then-else) *)
+(* sum = sum + i as Instruction *)
+val sumEqualsSumPlusI = Variable_Expression_Instruction(sum, expressionSumPlusI);
+
+(* For inner if-then-else, else instruction is Skip *)
+(* Inner If-Then-Else Instruction *)
+val innerIfThenElse = BooleanExpression_Instruction_Instruction(innerIfBooleanExpression, sumEqualsSumPlusI, Skip);
+
+(* There are 2 instructions inside while loop, one is inner if-then-else, 2nd is i = i + 1. We need both as a single Instruction(using Instruction_List) to write the while statement (using BooleanExpression_Instruction)  *)
+
+(* Instructions list inside while as Instruction list *)
+val instructionListInsideWhile = [(innerIfThenElse), (iEqualsIPlusOne)];
+
+(* Instructions inside while as a Instruction *)
+val instructionInsideWhile = Instruction_List(instructionListInsideWhile);
+
+(* Instruction for the while loop as a boolean expression of type Relational_Operation_BooleanExpression *)
+val whileBooleanExpression = Relational_Operation_BooleanExpression(integerExpressionI, Lt, integerExpressionN);
+(* While loop as in instruction *)
+val whileInstruction = BooleanExpression_Instruction(whileBooleanExpression, instructionInsideWhile);
+
+(* i=1 as instruction *)
+(* 1 as an Expression *)
+val expressionOne = IntegerExpression_Expression(integerExpressionOne);
+(* i=1 as Instruction *)
+val instructionIEqualsOne = Variable_Expression_Instruction(i, expressionOne);
+
+(* Outer Else Instructions as Instruction List*)
+val outerElseInstructionsList = [(instructionIEqualsOne), (whileInstruction)]
+(* Outer Else Instruction List as Instruction *)
+val outerElseInstruction = Instruction_List(outerElseInstructionsList)
+
+(* Outer If Boolean condition *)
+(*n Le 0*)
+val outerIfBooleanExpression = Relational_Operation_BooleanExpression(integerExpressionN, Le, integerExpressionZero); 
+
+(* Outer Then Condition *)
+(* Zero as an Expression *)
+val expressionZero = IntegerExpression_Expression(integerExpressionZero);
+(* sum=0 as Instruction *)
+val instructionSumEqualsZero = Variable_Expression_Instruction(sum, expressionZero);
+
+(* Outer If-Then-Else Instruction *)
+val outerIfThenElse = BooleanExpression_Instruction_Instruction(outerIfBooleanExpression, instructionSumEqualsZero, outerElseInstruction);
+
+(* 12 as an IntegerExpression *)
+val integerExpressionTwelve = Constant_IntegerExpression(twelve);
+
+(* 12 as an Expression *)
+val expressionTwelve = IntegerExpression_Expression(integerExpressionTwelve);
+
+(* n=12 as instruction*)
+val instructionNEqualsTwelve = Variable_Expression_Instruction(n, expressionTwelve);
+
+(* Instructions for Program as Instruction List *)
+val instructionListForProgram = [(instructionNEqualsTwelve), (instructionSumEqualsZero), (outerIfThenElse)];
+(* Instructions for program as Instruction *)
+val instructionsForProgram = Instruction_List(instructionListForProgram);
+
+(* Declarations *)
+(* Declaring n *)
+val declarationN = (n, IntegerType);
+(* Declaring sum *)
+val declarationSum = (sum, IntegerType);
+(* Declaring i *)
+val declarationI = (i, IntegerType);
+(* Declarations as declaration List*)
+val declarationListForProgram = [declarationN, declarationSum, declarationI];
+
+(* Final Program *)
+val finalProgram = GLL_Program(declarationListForProgram, instructionsForProgram);
+
+(* --------------------------------------Step 2: Static Semantics-------------------------------------- *)
+
+(* Validity Check for DeclarationList *)
+
+(* ----------------1--------------------- *)
+
+(* NoThisVar: DeclarationList -> Variable -> bool *)
+fun NoThisVar([])(v: Variable) = true |
+    NoThisVar((x: Variable, y: Type) :: declarationList_tail)(v: Variable)
+        = (x <> v) andalso NoThisVar(declarationList_tail)(v);
+
+(* ----------------2--------------------- *)
+
+(* ValidDecList: DeclarationList -> Boolean *)
+val rec ValidDecList = (fn ([]) => true |
+                        ((x, y) :: declarationList_tail : DeclarationList) 
+                            => NoThisVar(declarationList_tail)(x) andalso ValidDecList(declarationList_tail));
+
+(* -------------Testing for 2----------- *)
+
+(* Good Case: using declaration list of our sample program: should return true *)
+(* Should return true *)
+val goodCaseFor2 = ValidDecList(declarationListForProgram);
+
+(* Bad Case: using a bad declaration list: should return false *)
+(* Making bad declarationList, that has repeated declaration *)
+val badDeclarationList = [declarationI, declarationN, declarationSum, declarationI];
+(* Should Return false *)
+val badCaseFor2 = ValidDecList(badDeclarationList);
+
+(* 3-7: DeclarationList -> SymbolTable *)
+
+(* ----------------3--------------------- *)
+
+datatype InternalType = IntRep | BoolRep | NoDecRep;
+
+(* ----------------4--------------------- *)
+
+type SymbolTable = (Variable * InternalType) list;
+
+(* ----------------5--------------------- *)
+
+(* SymbolTablePlusOne: Declaration -> SymbolTable -> SymbolTable *)
+val SymbolTablePlusOne = (fn(v: Variable, IntegerType) =>
+                                (fn(oldSymbolTable: SymbolTable) => [(v, IntRep)] @ oldSymbolTable) |
+                            (v: Variable, BooleanType) =>
+                                (fn(oldSymbolTable: SymbolTable) => [(v, BoolRep)] @ oldSymbolTable));
+
+(* ----------------6--------------------- *)
+
+(* FullSymbolTableCreation: DeclarationList -> SymbolTable *)
+val rec FullSymbolTableCreation = (fn([]) => [] |
+                                    (declarationList_head :: declarationList_tail) =>
+                                        SymbolTablePlusOne(declarationList_head)(FullSymbolTableCreation(declarationList_tail)));
+
+(* -------------Testing for 6----------- *)
+
+(* Good Case: Should give symbol table for our sample program's declaration list *)
+val symbolTableForProgram = FullSymbolTableCreation(declarationListForProgram);
+
+(* ----------------7--------------------- *)
+
+(* SearchVarInternalType: Variable -> SymbolTable -> InternalType *)
+val rec SearchVarInternalType = (fn(x: Variable) => (fn([]) => NoDecRep |
+                                                    ((u: Variable, v: InternalType) :: SymbolTable_tail: SymbolTable) =>
+                                                        (if x = u then v
+                                                            else SearchVarInternalType(x)(SymbolTable_tail))));
+(* -------------Testing for 7----------- *)
+
+(* 3 good cases should return IntRep or BoolRep. Bad case should return NoDecRep *)
+(* Good cases *)
+(* Using the variable i from our sample program: Should give IntRep *)
+val firstGoodCaseFor7 = SearchVarInternalType(i)(symbolTableForProgram);
+
+(* Using the variable sum from our sample program: Should give IntRep *)
+val secondGoodCaseFor7 = SearchVarInternalType(sum)(symbolTableForProgram);
+
+(* Using the variable n from our sample program: Should give IntRep *)
+val thirdGoodCaseFor7 = SearchVarInternalType(n)(symbolTableForProgram);
+
+(* Bad case: Should return NoDecRep *)
+(* Bad variable(Variable not used in our program) for testing *)
+val badVariable = GLL_Variable("newVariable");
+(* Testing with badVariable: Should give NoDecRep *)
+SearchVarInternalType(badVariable)(symbolTableForProgram);
+
+
+(* Validity of Expressions, Instructions *)
+
+(* ----------------8--------------------- *)
+(* ValidIntExp: IntegerExpression -> SymbolTable -> bool *)
+fun ValidIntExp(Constant_IntegerExpression(v) : IntegerExpression)(st : SymbolTable) = true |
+    ValidIntExp(Variable_IntegerExpression(v) : IntegerExpression)(st : SymbolTable) = SearchVarInternalType(v)(st) = IntRep |
+    ValidIntExp(Arithmetic_Operation_IntegerExpression(intExpr1, arithmeticOperator, intExpr2): IntegerExpression)(st : SymbolTable) =
+        ValidIntExp(intExpr1)(st) andalso ValidIntExp(intExpr2)(st);
+
+(* -------------Testing for 8----------- *)
+
+(* 3 good cases 2 bad cases *)
+(* GoodCases: Should return true *)
+(* Good case using a Constant_IntegerExpression: Should return true *)
+val firstGoodCaseFor8 = ValidIntExp(integerExpressionOne)(symbolTableForProgram);
+
+(* Good case using a Variable_IntegerExpression: Should return true *)
+val secondGoodCaseFor8 = ValidIntExp(integerExpressionI)(symbolTableForProgram);
+
+(* Good case using a Arithmetic_Operation_IntegerExpression: Should return true *)
+val thirdGoodCaseFor8 = ValidIntExp(integerExpressionIPlusOne)(symbolTableForProgram);
+
+(* Bad cases: Should return false*)
+(* Bad case using a Variable_IntegerExpression having a bad variable: Should Return false *)
+val firstBadCaseFor8 = ValidIntExp(Variable_IntegerExpression(badVariable))(symbolTableForProgram);
+
+(* Second bad case: Making bad IntegerExpression for testing *)
+val badIntegerExpression = Variable_IntegerExpression(badVariable);
+(* Bad case using a Arithmetic_Operation_IntegerExpression having a bad integer expression: Should Return false *)
+val secondBadCaseFor8 = ValidIntExp(Arithmetic_Operation_IntegerExpression(integerExpressionI, Plus, badIntegerExpression))(symbolTableForProgram);
+
+(* ----------------9--------------------- *)
+(* ValidBooleanExp: BooleanExpression -> SymbolTable -> bool *)
+val rec ValidBoolExp = (fn (Constant_BooleanExpression(v): BooleanExpression) =>
+                                (fn (st: SymbolTable) =>
+                                    true) |
+                            (Variable_BooleanExpression(v): BooleanExpression) =>
+                                (fn (st: SymbolTable) =>
+                                    SearchVarInternalType(v)(st) = BoolRep) |
+                            (Relational_Operation_BooleanExpression(integerExpression1, relatinalOperator, integerExpression2): BooleanExpression) =>
+                                (fn (st: SymbolTable) =>
+                                    ValidIntExp(integerExpression1)(st) andalso ValidIntExp(integerExpression2)(st)) |
+                            (Boolean_Operation_BooleanExpression(booleanExpression1, booleanOperator, booleanExpression2): BooleanExpression) =>
+                                (fn (st: SymbolTable) =>
+                                    ValidBoolExp(booleanExpression1)(st) andalso ValidBoolExp(booleanExpression2)(st)));
+
+(* -------------Testing for 9----------- *)
+
+(* 4 good cases 1 bad cases *)
+(* Good Cases: Should return true *)
+(* Making a Constant_BooleanExpression for testing *)
+val constantBooleanExpressionForTesting = Constant_BooleanExpression(false);
+(* Good case using a Constant_BooleanExpression: Should return true *)
+val firstGoodCaseFor9 =  ValidBoolExp(constantBooleanExpressionForTesting)(symbolTableForProgram);
+
+(* Making a bool type variable for testing *)
+val booleanVariable = GLL_Variable("booleanVariable");
+(* Making a symbolTable with a bool type variable for testing *)
+val symbolTableWithBool = FullSymbolTableCreation([declarationN, declarationSum, declarationI, (booleanVariable, BooleanType)]);
+(* Making a Variable_BooleanExpression for testing *)
+val variableBooleanExpressionForTesting = Variable_BooleanExpression(booleanVariable);
+(* Good case using Variable_BooleanExpression: Should return true *)
+val secondGoodCaseFor9 = ValidBoolExp(variableBooleanExpressionForTesting)(symbolTableWithBool);
+
+(* Good case using Relational_Operation_BooleanExpression from our sample program: Should return true *)
+val thirdGoodCaseFor9 = ValidBoolExp(outerIfBooleanExpression)(symbolTableForProgram);
+
+(* Making Boolean_Operation_BooleanExpression for testing *)
+val booleanOperatorBooleanExpressionForTesting = Boolean_Operation_BooleanExpression(outerIfBooleanExpression, And , whileBooleanExpression);
+(* Good case using Boolean_Operation_BooleanExpression: Should return true *)
+val fourthGoodCaseFor9 = ValidBoolExp(booleanOperatorBooleanExpressionForTesting)(symbolTableForProgram);
+
+(* 1 bad case *)
+(* Bad case using Relational_Operation_BooleanExpression having a bad integer expression: Should Return false *)
+val badCaseFor9 = ValidBoolExp(Relational_Operation_BooleanExpression(badIntegerExpression, Eq, integerExpressionN))(symbolTableForProgram);
+
+(* Validity Check for Instructions *)
+
+(* ----------------10--------------------- *)
+
+(* ValidInstruction: Instruction -> SymbolTable -> bool *)
+fun ValidInstruction(Skip: Instruction) =
+                        (fn (st: SymbolTable) => true) |
+    ValidInstruction(Variable_Expression_Instruction(variable: Variable, IntegerExpression_Expression(integerExpression): Expression): Instruction) =
+                        (fn (st: SymbolTable) =>
+                            ValidIntExp(integerExpression)(st) andalso (SearchVarInternalType(variable)(st) = IntRep)) |
+    ValidInstruction(Variable_Expression_Instruction(variable: Variable, BooleanExpression_Expression(booleanExpression): Expression): Instruction) =
+                        (fn (st: SymbolTable) =>
+                            ValidBoolExp(booleanExpression)(st) andalso (SearchVarInternalType(variable)(st) = BoolRep)) |
+    ValidInstruction(Instruction_List([]): Instruction) =
+                        (fn (st: SymbolTable) => true) |
+    ValidInstruction(Instruction_List(instructionList_head :: instructionList_tail): Instruction) =
+                        (fn (st: SymbolTable) =>
+                            ValidInstruction(instructionList_head)(st) andalso ValidInstruction(Instruction_List(instructionList_tail))(st)) |
+    ValidInstruction(BooleanExpression_Instruction_Instruction(booleanExpression, instruction1, instruction2): Instruction) =
+                        (fn (st: SymbolTable) =>
+                            ValidBoolExp(booleanExpression)(st) andalso ValidInstruction(instruction1)(st) andalso ValidInstruction(instruction2)(st)) |
+    ValidInstruction(BooleanExpression_Instruction(booleanExpression, instruction): Instruction) =
+                        (fn (st: SymbolTable) =>
+                            ValidBoolExp(booleanExpression)(st) andalso ValidInstruction(instruction)(st));
+
+(* -------------Testing for 10----------- *)
+
+(* 5 good cases, 2 bad cases *)
+(* Good cases: should return true *)
+(* Good case for integer assignment from our sample program *)
+val firstGoodCaseFor10 = ValidInstruction(instructionIEqualsOne)(symbolTableForProgram);
+
+(* Boolean Assignment Instruction for testing *)
+val booleanAssignmentInstruction = Variable_Expression_Instruction(booleanVariable, BooleanExpression_Expression(whileBooleanExpression));
+(* Good case using boolean assignment: Should return true *)
+val secondGoodCaseFor10 = ValidInstruction(booleanAssignmentInstruction)(symbolTableWithBool);
+
+(* Good case using instruction list from our program: Should return true *)
+val thirdGoodCaseFor10 = ValidInstruction(instructionsForProgram)(symbolTableForProgram);
+
+(* Good case using if-then-else: using if-then-else from our program: Should return true *)
+val fourthGoodCaseFor10 = ValidInstruction(outerIfThenElse)(symbolTableForProgram);
+
+(* Good case using while loop from our program: Should return true *)
+val fifthGoodCaseFor10 = ValidInstruction(whileInstruction)(symbolTableForProgram);
+
+(* Bad cases: should return false *)
+(* Bad assignment assigning integer type expression to boolean type variable: Should return false *)
+val firstBadCaseFor10 = ValidInstruction(Variable_Expression_Instruction(booleanVariable, expressionOne))(symbolTableWithBool);
+
+(* Testing Bad Loop *)
+(* Creating bad expression *)
+val badExpression = IntegerExpression_Expression(badIntegerExpression);
+(* Creating bad Instruction *)
+val badInstruction = Variable_Expression_Instruction(sum, badExpression);
+(* Testing a bad loop having bad instruction: Should return false *)
+val secondBadCaseFor10 = ValidInstruction(BooleanExpression_Instruction(whileBooleanExpression, badInstruction))(symbolTableForProgram);
+
+(* Validity Check for Program *)
+
+(* ----------------11--------------------- *)
+exception InvalidDeclarationList;
+
+(* ----------------12--------------------- *)
+exception InvalidProgramBody;
+
+(* ----------------13--------------------- *)
+(* ValidProgram: Program -> bool *)
+val ValidProgram = (fn (GLL_Program(declarationList: DeclarationList, prog_body: Instruction)) =>
+                        if ValidDecList(declarationList)
+                            then if ValidInstruction(prog_body)(FullSymbolTableCreation(declarationList))
+                                    then true
+                                        else raise InvalidProgramBody
+                                else raise InvalidDeclarationList);
+
+(* -------------Testing for 13----------- *)
+
+(* 1 good case, 2 bad cases *)
+(* Good case should return true*)
+(* Using our GLL_Program for good case: Should return true *)
+val goodCaseFor13 = ValidProgram(finalProgram);
+
+(* Bad cases *)
+(* Making a program with bad declaration list *)
+val programWithBadDeclarationList = GLL_Program(badDeclarationList, instructionsForProgram);
+(* Bad case using bad declaration list: Should raise exception InvalidDeclarationList  *)
+(* val firstBadCaseFor13 = ValidProgram(programWithBadDeclarationList); *)
+
+(* Making a bad program body using a bad instruction *)
+val programWithBadBody = GLL_Program(declarationListForProgram, badInstruction);
+(* Bad case using bad program body: Should raise exception InvalidProgramBody *)
+(* val secondBadCaseFor13 = ValidProgram(programWithBadBody); *)
+
+(* --------------------------------------Step 3: Dynamic Semantics-------------------------------------- *)
+
+(* Memory Abstraction and Memory Value Update *)
+
+(* ----------------1--------------------- *)
+
+datatype MemoryValue = IntValue of int | BoolValue of bool | UnknownValue;
+
+(* ----------------2--------------------- *)
+
+type ProgState = Variable -> MemoryValue;
+
+(* ----------------3--------------------- *)
+
+(* PSInitial: ProgState *)
+val PSInitial = (fn(v: Variable) => UnknownValue);
+
+(* ----------------Testing for 3--------------------- *)
+
+val firstTestCaseFor3 = PSInitial(sum);
+val secondTestCaseFor3 = PSInitial(i);
+val thirdTestCaseFor3 = PSInitial(n);
+
+(* ----------------4--------------------- *)
+
+(* PSUpdateOneMapping: Variable -> MemoryValue -> ProgState -> Variable -> MemoryValue *)
+fun PSUpdateOneMapping(x: Variable)(mv: MemoryValue)
+                        (oldPS: ProgState)(y: Variable) = (if y = x then mv else oldPS(y));
+
+(* ----------------Testing for 4--------------------- *)
+
+(* val myPS1 = PSUpdateOneMapping(v1)(mv1)(PSInitial) *)
+(* myPS1 takes a variable, if the variable is v1 it gives mv1 else applies PSInitial that returns Unknown Value *)
+
+val mv1 = IntValue(2);
+val myPS1 = PSUpdateOneMapping(i)(mv1)(PSInitial);
+(* Should return IntValue(2) *)
+val firstTestCasefor4 = myPS1(i);
+(* Should return UnknownValue *)
+val secondTestCasefor4 = myPS1(sum);
+
+(* val myPS2 = PSUpdateOneMapping(v2)(mv2)(myPS1) *)
+(* myPS2 takes a variable, if the variable is v2 it gives mv2 else applies myPS1 on that variable *)
+val mv2 = IntValue(5);
+val myPS2 = PSUpdateOneMapping(sum)(mv2)(myPS1);
+(* Should return IntValue(5) *)
+val thirdTestCaseFor4 = myPS2(sum);
+(* Should return IntValue(2) *)
+val fourthTestCaseFor4 = myPS2(i);
+(* Should return UnknownValue *)
+val fifthTestCaseFor4 = myPS2(n);
+
+(* Meaning of Expression *)
+
+(* ----------------5--------------------- *)
+
+exception DivisonError;
+
+(* ----------------6--------------------- *)
+
+exception IncomptiableArthiExp;
+
+(* ----------------7--------------------- *)
+
+(* ArithExpCalculation: MemoryValue * Arithmetic_Op * MemoryValue -> MemoryValue *)
+fun ArithExpCalculation(IntValue(i_1), Minus, IntValue(i_2)) = IntValue(i_1 - i_2)   |
+    ArithExpCalculation(IntValue(i_1), Plus, IntValue(i_2)) = IntValue(i_1 + i_2)    |
+    ArithExpCalculation(IntValue(i_1), Times, IntValue(i_2)) = IntValue(i_1 * i_2)   |
+    ArithExpCalculation(IntValue(i_1), Div, IntValue(i_2)) =
+                            if i_2 = 0 then raise DivisonError else IntValue(i_1 div i_2)    |
+    (*   Raise exception for Incomptiable Arthimetic Expression type *)
+    ArithExpCalculation(_, _, _) = raise   IncomptiableArthiExp;
+
+(* ----------------Testing for 7--------------------- *)
+
+val firstGoodCaseFor7 =  ArithExpCalculation(IntValue(5), Plus, IntValue(5));
+val secondGoodCaseFor7 = ArithExpCalculation(IntValue(15), Minus, IntValue(20));
+val thirdGoodCaseFor7 = ArithExpCalculation(IntValue(20), Times, IntValue(40));
+val fourthGoodCaseFor7 = ArithExpCalculation(IntValue(40), Div, IntValue(4));
+(* val firstBadCaseFor7  = ArithExpCalculation(BoolValue(true), Plus, IntValue(5)); *)
+
+(* ----------------8--------------------- *)
+
+exception IncomptiableRelaExp;
+
+(* ----------------9--------------------- *)
+
+(* RelaExpCalculation: MemoryValue * Relational_Op * MemoryValue -> MemoryValue *)
+fun RelaExpCalculation(IntValue(i_1), Lt, IntValue(i_2)) = BoolValue(i_1 < i_2)  |
+    RelaExpCalculation(IntValue(i_1), Le, IntValue(i_2)) = BoolValue(i_1 <= i_2) |
+    RelaExpCalculation(IntValue(i_1), Eq, IntValue(i_2)) = BoolValue(i_1 = i_2)  |
+    RelaExpCalculation(IntValue(i_1), Ne, IntValue(i_2)) = BoolValue(i_1 <> i_2) |
+    RelaExpCalculation(IntValue(i_1), Ge, IntValue(i_2)) = BoolValue(i_1 >= i_2) |
+    RelaExpCalculation(IntValue(i_1), Gt, IntValue(i_2)) = BoolValue(i_1 > i_2)  |
+
+    (*   Raise exception for Incomptiable Relational Expression type *)  
+    RelaExpCalculation(_, _, _) = raise IncomptiableRelaExp;
+
+(* --------- testing --------- *)
+
+(* Testing the memory value of a relational expression using two integer constants from our sample GRALL program  *)
+val GoodCaseFor9 = RelaExpCalculation(IntValue(zero), Lt, IntValue(one));
+
+(* ----------------10--------------------- *)
+
+exception IncomptiableBoolExp;
+
+(* --------- 11 ---------*)
+
+(* BoolExpCalculation: MemoryValue * Boolean_Op * MemoryValue -> MemoryValue *)
+fun BoolExpCalculation(BoolValue(i_1), And, BoolValue(i_2)) = BoolValue(i_1 andalso i_2) |
+    BoolExpCalculation(BoolValue(i_1), Or, BoolValue(i_2)) = BoolValue(i_1 orelse i_2) |
+
+    (*   Raise exception for Incomptiable Boolean Expression type *)
+    BoolExpCalculation(_, _, _) = raise IncomptiableBoolExp;
+
+(* --------------- Testing for 11 --------------- *)
+
+(* Created two constant boolean variables and tested with a boolean operator using BoolExpCalculation *)
+val constantBooleanForTesting1 = true;
+val constantBooleanForTesting2 = false;
+val GoodCaseFor11 = BoolExpCalculation(BoolValue(constantBooleanForTesting1), Or, BoolValue(constantBooleanForTesting2)); 
+
+(* --------- 12 ---------*)
+
+(* MeaningIntExp: IntegerExpression -> ProgState -> MemoryValue *)
+val rec MeaningIntExp = (fn (Constant_IntegerExpression(i_1)) => (fn(PS : ProgState) => IntValue(i_1)) |
+                            (Variable_IntegerExpression(v)) => (fn(PS : ProgState) => PS(v)) |
+                            (Arithmetic_Operation_IntegerExpression(iexp1, Arithmatic_Op, iexp2)) =>
+                                (fn(PS : ProgState) =>
+                                    ArithExpCalculation(MeaningIntExp(iexp1)(PS), Arithmatic_Op, MeaningIntExp(iexp2)(PS)))
+                        );
+
+(* --------- Testing for 12 --------- *)
+
+(* testing Constant_IntegerExpression using a varible from GRALL sample program  *)
+(* Using myPS2 as prog state for testing since it has values for Sum and I *)
+(* Should give IntValue(0) *)
+val GoodCaseOneFor12 = MeaningIntExp(Constant_IntegerExpression(zero))(myPS2);
+(* Should give IntValue(5) *)
+val GoodCaseTwoFor12 = MeaningIntExp(Variable_IntegerExpression(sum))(myPS2);
+(* Should give IntValue(7) *)
+val GoodCaseTwoFor12 = MeaningIntExp(Arithmetic_Operation_IntegerExpression(integerExpressionSum, Plus, integerExpressionI))(myPS2);
+
+(* --------- 13 ---------*)
+(* MeaningBoolExp: BooleanExpression -> ProgState -> MemoryValue *)  
+val rec MeaningBoolExp = (fn(Constant_BooleanExpression(i_1)) => (fn(PS: ProgState) => BoolValue(i_1)) |
+                            (Variable_BooleanExpression(v)) => (fn(PS: ProgState) => PS(v)) |
+                            (Relational_Operation_BooleanExpression(iexp1, Relational_Op, iexp2)) =>
+                                (fn(PS : ProgState) =>
+                                    RelaExpCalculation(MeaningIntExp(iexp1)(PS), Relational_Op, MeaningIntExp(iexp2)(PS))) | 
+                            (Boolean_Operation_BooleanExpression(bexp1, Boolean_Op, bexp2)) =>
+                                (fn(PS : ProgState) =>
+                                    BoolExpCalculation(MeaningBoolExp(bexp1)(PS), Boolean_Op, MeaningBoolExp(bexp2)(PS)))
+                         );      
+
+(* ----------------Testing for 13--------------------- *)
+
+(* Adding boolean to prog state *)
+val myPS3 = PSUpdateOneMapping(booleanVariable)(BoolValue(true))(myPS2);
+(* Good Case *)
+(* Should return BoolValue(false) *)
+val firstGoodCaseFor13 = MeaningBoolExp(constantBooleanExpressionForTesting)(myPS3);
+(* Should return BoolValue(true) *)
+val secondGoodCaseFor13 = MeaningBoolExp(variableBooleanExpressionForTesting)(myPS3);
+
+(* Adding n to prog state *)
+val myPS4 = PSUpdateOneMapping(n)(IntValue(10))(myPS3);
+
+val booleanVariable2 = GLL_Variable("booleanVariable2")
+(* Adding second boolean to ProgState *)
+val myPS5 = PSUpdateOneMapping(booleanVariable2)(BoolValue(false))(myPS4);
+(* Should return BoolValue(false) *)
+val thirdGoodCaseFor13 = MeaningBoolExp(Relational_Operation_BooleanExpression(integerExpressionITimesNDivI, Lt, integerExpressionIPlusOne))(myPS5);
+(* Should return BoolValue(false) *)
+val fourthGoodCaseFor13 = MeaningBoolExp(Boolean_Operation_BooleanExpression(outerIfBooleanExpression, And, whileBooleanExpression))(myPS5);
+
+(* --------- 14 ---------*)
+(* MeaningExp: Expression -> ProgState -> MemoryValue *)
+fun MeaningExp(IntegerExpression_Expression(iexp)) = (fn(PS : ProgState) => MeaningIntExp(iexp)(PS)) |
+    MeaningExp(BooleanExpression_Expression(bexp)) = (fn(PS : ProgState) => MeaningBoolExp(bexp)(PS));
+
+(* ----------------Testing for 14--------------------- *)
+
+(*Good Case*)
+
+(* Should give IntValue(0) *)
+val firstGoodCaseFor14 = MeaningExp(IntegerExpression_Expression(integerExpressionNMinusITimesNDivI))(myPS5);
+(* Should return BoolValue(false) *)
+val secondGoodCaseFor14 = MeaningExp(BooleanExpression_Expression(outerIfBooleanExpression))(myPS5);
+
+
+(* 15-17: Meaning of Instruction and Program  *)
+
+(* --------- 15 ---------*)
+
+(* MeaningInst: Instruction -> ProgState -> ProgState *)
+fun MeaningInst(Skip)(PS : ProgState) = PS |
+    MeaningInst(Variable_Expression_Instruction(v, exp))(PS : ProgState) =
+                PSUpdateOneMapping(v)(MeaningExp(exp)(PS))(PS) |
+    MeaningInst(Instruction_List([]))(PS: ProgState) = PS |
+    MeaningInst(Instruction_List(instruction_list_head :: instruction_list_tail))(PS : ProgState) =
+                MeaningInst(Instruction_List(instruction_list_tail))(MeaningInst(instruction_list_head)(PS)) |  
+    MeaningInst(BooleanExpression_Instruction_Instruction(bexp, inst_branch1, inst_branch2))(PS : ProgState) =
+                if MeaningBoolExp(bexp)(PS) = BoolValue(true)
+                    then MeaningInst(inst_branch1)(PS)
+                else MeaningInst(inst_branch2)(PS) |   
+    MeaningInst(BooleanExpression_Instruction(bexp, inst_body))(PS : ProgState) = 
+                if MeaningBoolExp(bexp)(PS) = BoolValue(true)
+                    then MeaningInst(BooleanExpression_Instruction(bexp, inst_body))(MeaningInst(inst_body)(PS))
+                else PS;    
+
+(* ----------------Testing for 15--------------------- *)
+
+(* After assignmnet (sum = sum + i), sum should be IntValue(7) *)
+val firstGoodCaseFor15 = MeaningInst(Variable_Expression_Instruction(sum, expressionSumPlusI))(myPS5);
+val verifyingFirstCasefor15 = firstGoodCaseFor15(sum);
+
+(* Testing with non empty instruction list *)
+val secondGoodCaseFor15 = MeaningInst(Instruction_List([iEqualsIPlusOne, sumEqualsSumPlusI]))(myPS5)
+(* Should give IntValue(3) *)
+val verifyingSecondCasefor15ForI = secondGoodCaseFor15(i);
+(* Should give IntValue(8) *)
+val verifyingSecondCasefor15ForSum = secondGoodCaseFor15(sum);
+
+(* Testing for if-then-else *)
+(* The boolean expression should evaluate to false and the else instruction should execute. *)
+val thirdGoodCaseFor15 = MeaningInst(BooleanExpression_Instruction_Instruction(outerIfBooleanExpression, sumEqualsSumPlusI, iEqualsIPlusOne))(myPS5);
+(* Should give IntValue(3) *)
+val verifyingThirdCasefor15ForI = thirdGoodCaseFor15(i);
+(* Should give IntValue(5) *)
+val verifyingThirdCasefor15ForSum = thirdGoodCaseFor15(sum);
+
+(* Testing for while *)
+(* i is 2 but after execution of while loop it should be 10 *)
+val fourthGoodCaseFor15 = MeaningInst(BooleanExpression_Instruction(whileBooleanExpression, iEqualsIPlusOne))(myPS5);
+val verifyingfourthGoodCaseFor15ForI = fourthGoodCaseFor15(i)
+
+(* Testing for  *)
+
+(* --------- 16 ---------*)
+exception ProgramError;
+
+(* --------- 17 ---------*)
+(* MeaningProgram: Program -> ProgState *)
+val MeaningProgram = (fn(GLL_Program(declarationList, prog_body)) =>
+                        if ValidProgram(GLL_Program(declarationList, prog_body))
+                            then MeaningInst(prog_body)(PSInitial)
+                        else raise ProgramError
+                     );
+
+(* Running our sample program *)
+val testingFor17 = MeaningProgram(finalProgram);
+(* After execution of our sample program:
+i should be: 12
+n should be: 12
+sum should be: 16
+*)
+val verifying16ForI = testingFor17(i);
+val verifying16ForN = testingFor17(n);
+val verifying16ForSum = testingFor17(sum);
